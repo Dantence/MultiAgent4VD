@@ -1,0 +1,108 @@
+app:
+  debate_rounds: 3
+  max_tool_calls: 2
+  default_encoding: "utf-8"
+  max_snippet_lines: 30
+  max_file_chars: 120000
+
+  # SARIF 定位所需
+  project_root: "D:/your/project/root"     # 用于拼接相对路径（比如 %SRCROOT% 的落地目录）
+  uriBaseId_map:                           # uriBaseId -> 本地路径 的映射（可选，优先于 project_root）
+    "%SRCROOT%": "D:/your/project/root"
+  prefer_absolute_uri: true                # 若 SARIF 里是 file:/// 绝对路径，优先使用
+
+llm:
+  provider: "openai-compatible"
+  base_url: "https://api.deepseek.com/v1"
+  api_key: "sk-929f29faa78f4dd6aa40da1b132ee59e"
+  model: "deepseek-chat"
+  temperature: 0.2
+  timeout: 60
+
+prompts:
+  agent_a_system: |
+    You are Agent A, a senior vulnerability analyst. You have a private vulnerability KB (simulated)
+    and a snippet selector (simulated) to shortlist suspicious code from full files based on CodeQL intent.
+    Provide a concise, actionable brief for Red/Blue teams.
+  agent_b_system: |
+    You are Agent B (Red Team). Provide concrete exploit paths, payloads, edge cases, and why they work.
+    Be incisive and realistic.
+  agent_c_system: |
+    You are Agent C (Blue Team). Refute false positives, show sanitization/constraints, and propose fixes.
+  judge_system: |
+    You are the Final Judge. Merge Agent A's brief and the Red/Blue debate to output STRICT JSON:
+    {
+      "verdict": "vulnerable" | "clean",
+      "reasons": [string...],
+      "evidence": [string...],
+      "confidence": float,
+      "recommendations": [string...]
+    }
+    Output only JSON, no markdown fences.
+
+tools:
+  available:
+    - retrieve_vuln_kb
+    - select_suspicious
+    - run_calculator
+
+  vuln_kb:
+    - id: "java/overly-large-range"
+      cwe: ["CWE-020"]
+      patterns:
+        - "regex range [A-z] includes extra ASCII chars"
+      detection_hints:
+        - "Prefer [A-Za-z] instead of [A-z]"
+        - "Boundary chars: [ \\ ^ _ ` ]"
+      fixes:
+        - "Replace [A-z] with [A-Za-z]"
+        - "Add unit tests for boundary chars"
+    - id: "java/spring-path-traversal"
+      cwe: ["CWE-022"]
+      patterns:
+        - "unvalidated user input in file paths"
+      detection_hints:
+        - "check '..' or URL-encoded traversal"
+      fixes:
+        - "normalize and enforce allowed roots"
+
+  selector_rules:
+    suspicious_keywords:
+      - "Pattern.compile"
+      - "regex"
+      - "[A-z]"
+      - "request.getParameter"
+      - "Runtime.getRuntime().exec"
+      - "File("
+      - "Paths.get"
+      - "Path.of"
+      - "Files.newInputStream"
+    context_window: 12
+
+  calculator:
+    max_digits: 12
+
+codeql:
+  # 默认 CodeQL 查询文本（当找不到 ruleId 映射时 fallback）
+  default_query_text: |
+    // Default CodeQL query placeholder used when no rule-specific query is configured.
+    // This is a stub to provide high-level intent to the LLM.
+
+  # 可选：ruleId -> 原始 CodeQL 查询文本的映射（你可以用真实内容替换）
+  rule_query_map:
+    "java/overly-large-range": |
+      import java
+      from Pattern p, string s
+      where p.toString().matches(".*\\[A-z].*")
+      select p, "Overly permissive range [A-z]"
+    "java/spring-path-traversal": |
+      // sample query for path traversal (placeholder)
+
+logging:
+  enabled: true
+  show_prompts: false
+  show_tool_io: true
+  show_debate_rounds: true
+  timestamp: true
+  time_format: "%H:%M:%S"
+  prefix: "[VulnAgents]"

@@ -1,0 +1,27 @@
+# --- Core LangChain stack ---
+langchain>=0.2.10
+langgraph>=0.2.14
+langchain-community>=0.2.10
+langchain-openai>=0.1.23
+langchain-huggingface>=0.1.2
+langchain-text-splitters>=0.2.2
+
+# --- RAG & embeddings (FAISS + HF) ---
+faiss-cpu>=1.8.0
+sentence-transformers>=3.0.1
+transformers>=4.42.0
+
+# --- Utilities ---
+tiktoken>=0.7.0
+pydantic>=2.7.0
+numpy>=1.26.0
+openai>=1.40.0
+httpx>=0.27.0
+aiohttp>=3.9.0
+tqdm>=4.66.0
+python-dotenv>=1.0.1
+
+# --- Windows console colors (optional) ---
+colorama>=0.4.6
+PyYAML>=6.0.1
+

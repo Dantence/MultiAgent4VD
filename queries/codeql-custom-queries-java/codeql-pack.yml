@@ -1,0 +1,7 @@
+---
+library: false
+warnOnImplicitThis: false
+name: getting-started/queries-java
+version: 1.0.0
+dependencies:
+  codeql/java-all: ^7.7.2
